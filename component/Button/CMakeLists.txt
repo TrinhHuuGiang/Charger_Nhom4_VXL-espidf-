@@ -1,4 +1,4 @@
-set(app_src BTN.C)
+set(app_src BTN.c)
 set(pri_req)
 idf_component_register(SRCS ${app_src}
                     INCLUDE_DIRS "."

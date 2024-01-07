@@ -1,4 +1,4 @@
-set(app_src MicroSD.C)
+set(app_src MicroSD.c)
 set(pri_req)
 idf_component_register(SRCS ${app_src}
                     INCLUDE_DIRS "."
