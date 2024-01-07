@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
 #include "BTN.h"
 #include "Relay.h"
 
@@ -32,10 +33,10 @@ void app_main(void)
         else
         relay_set_level(RELAY_PIN_2, 1);
 
-        if(button_get_level(BUTTON_PIN_2)==1)
-        relay_set_level(RELAY_PIN_2, 0);
+        if(button_get_level(BUTTON_PIN_3)==1)
+        relay_set_level(RELAY_PIN_3, 0);
         else
-        relay_set_level(RELAY_PIN_2, 1);
+        relay_set_level(RELAY_PIN_3, 1);
 
         vTaskDelay(1);
     }

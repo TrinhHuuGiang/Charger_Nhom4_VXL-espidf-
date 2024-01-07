@@ -1,5 +1,5 @@
 #include "driver/gpio.h"
-
+#include "BTN.h"
 
 // Khoi tao button cho esp32 che do input
 void button_init(gpio_num_t BUTTON_PIN, gpio_mode_t GPIO_MODE_INPUT)
