@@ -4,6 +4,7 @@
 // Khoi tao button cho esp32 che do input
 void button_init(gpio_num_t BUTTON_PIN, gpio_mode_t GPIO_MODE_INPUT)
 {
+    gpio_pad_select_gpio(BUTTON_PIN);
     gpio_set_direction(BUTTON_PIN,GPIO_MODE_INPUT);
 }
 
