@@ -1,6 +1,9 @@
 #ifndef MCP41010
 #define MCP41010
 
+#include "driver/spi_master.h"
+#include "driver/gpio.h"
+
 #define KOHMS_MCP41010 10
 
 enum MCP_POTENTIOMETER {

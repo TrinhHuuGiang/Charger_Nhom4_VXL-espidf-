@@ -1,6 +1,7 @@
 #include "MCP41010.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include <string.h>
 static const int SPI_Frequency = SPI_MASTER_FREQ_20M;
 
 void mcp41010_init(MCP_t * dev,float totalKOhms ,spi_host_device_t HOST_ID,

@@ -1,3 +1,5 @@
+//đoạn code cho mcp41010 tự động điều chỉnh
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h" // tao task freertos
 #include "freertos/task.h" //
@@ -34,12 +36,6 @@
 
 void app_main(void)
 {
-    button_init(BUTTON_PIN_1,GPIO_MODE_INPUT);
-    button_init(BUTTON_PIN_2,GPIO_MODE_INPUT);
-    button_init(BUTTON_PIN_3,GPIO_MODE_INPUT);
-    relay_init(RELAY_PIN_1,GPIO_MODE_OUTPUT,0);
-    relay_init(RELAY_PIN_2,GPIO_MODE_OUTPUT,0);
-    relay_init(RELAY_PIN_3,GPIO_MODE_OUTPUT,0);
 
     MCP_t dev1;
     mcp41010_init(&dev1, KOHMS_MCP41010, 2, MOSI_PIN, SCK_PIN,CS_PIN_1);
@@ -82,26 +78,4 @@ void app_main(void)
     vTaskDelay(1000);
 
     }
-
-    /* hàm test bấm button , relay bật tắt
-    while (1)
-    {
-            
-        if(button_get_level(BUTTON_PIN_1)==1) //0 nhan nut
-        relay_set_level(RELAY_PIN_1, 0); // mac dinh
-        else
-        relay_set_level(RELAY_PIN_1, 1);
-
-        if(button_get_level(BUTTON_PIN_2)==1)
-        relay_set_level(RELAY_PIN_2, 0);
-        else
-        relay_set_level(RELAY_PIN_2, 1);
-
-        if(button_get_level(BUTTON_PIN_3)==1)
-        relay_set_level(RELAY_PIN_3, 0);
-        else
-        relay_set_level(RELAY_PIN_3, 1);
-
-        vTaskDelay(1);
-    }*/
 }
