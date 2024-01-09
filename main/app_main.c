@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
+#include "freertos/FreeRTOS.h" // tao task freertos
+#include "freertos/task.h" //
+#include "driver/gpio.h"// driver gpio
+#include "sdkconfig.h" // cau hinh menuconfig
 #include "BTN.h"
 #include "Relay.h"
 
