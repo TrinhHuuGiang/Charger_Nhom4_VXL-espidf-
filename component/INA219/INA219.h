@@ -40,7 +40,7 @@
 #ifndef __INA219_H__
 #define __INA219_H__
 
-#include <i2cdev.h>
+#include "i2cdev.h"
 #include <esp_err.h>
 
 #ifdef __cplusplus

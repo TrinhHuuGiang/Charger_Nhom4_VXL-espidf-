@@ -37,8 +37,10 @@
  */
 #include <esp_log.h>
 #include <math.h>
-#include <esp_idf_lib_helpers.h>
+
 #include "ina219.h"
+#include <esp_idf_lib_helpers.h>
+
 
 #define I2C_FREQ_HZ 1000000 // Max 1 MHz for esp-idf, but supports up to 2.56 MHz
 
