@@ -39,7 +39,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <esp_err.h>
-#include <esp_idf_lib_helpers.h>
+#include "esp_idf_lib_helpers.h"
 
 #ifdef __cplusplus
 extern "C" {
