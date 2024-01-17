@@ -4,6 +4,7 @@
         "gpio.h": "c",
         "sdkconfig.h": "c",
         "*.ipp": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "ina219.h": "c"
     }
 }
