@@ -7,7 +7,11 @@
 #include <assert.h>
 
 #define I2C_PORT 0
-#define I2C_ADDR CONFIG_EXAMPLE_I2C_ADDR
+#define CONFIG_EXAMPLE_I2C_MASTER_SDA 21
+#define CONFIG_EXAMPLE_I2C_MASTER_SCL 22
+#define I2C_ADDR 0x40
+#define CONFIG_EXAMPLE_MAX_CURRENT 3
+#define CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM 0.1
 
 const static char *TAG = "INA219_example";
 
