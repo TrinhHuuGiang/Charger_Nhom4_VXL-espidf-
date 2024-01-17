@@ -6,7 +6,7 @@
 #include "sdkconfig.h"
 #include "rom/ets_sys.h"
 #include <esp_log.h>
-
+#include "lcd1602.h"
 // LCD module defines
 #define LCD_LINEONE             0x00        // start of line 1
 #define LCD_LINETWO             0x40        // start of line 2

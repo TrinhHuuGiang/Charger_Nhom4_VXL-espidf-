@@ -3,6 +3,7 @@
     "files.associations": {
         "gpio.h": "c",
         "sdkconfig.h": "c",
-        "*.ipp": "c"
+        "*.ipp": "c",
+        "string.h": "c"
     }
 }
