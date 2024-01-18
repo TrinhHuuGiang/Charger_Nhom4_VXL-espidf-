@@ -1,59 +1,66 @@
 #include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include "INA219.h"
-#include <string.h>
-#include <esp_log.h>
-#include <assert.h>
+#include "ds18b20.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
 
-#define I2C_PORT 0
-#define CONFIG_EXAMPLE_I2C_MASTER_SDA 21
-#define CONFIG_EXAMPLE_I2C_MASTER_SCL 22
-#define I2C_ADDR 0x40
-#define CONFIG_EXAMPLE_MAX_CURRENT 3
-#define CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM 0.1
+// Temp Sensors are on GPIO23
+#define TEMP_BUS 23
+#define LED 2
+#define HIGH 1
+#define LOW 0
+#define digitalWrite gpio_set_level
 
-const static char *TAG = "INA219_example";
+DeviceAddress tempSensors[2];
 
-void task(void *pvParameters)
-{
-    ina219_t dev;
-    memset(&dev, 0, sizeof(ina219_t));
-
-    assert(CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM > 0);
-    ESP_ERROR_CHECK(ina219_init_desc(&dev, I2C_ADDR, I2C_PORT, CONFIG_EXAMPLE_I2C_MASTER_SDA, CONFIG_EXAMPLE_I2C_MASTER_SCL));
-    ESP_LOGI(TAG, "Initializing INA219");
-    ESP_ERROR_CHECK(ina219_init(&dev));
-
-    ESP_LOGI(TAG, "Configuring INA219");
-    ESP_ERROR_CHECK(ina219_configure(&dev, INA219_BUS_RANGE_16V, INA219_GAIN_0_125,
-            INA219_RES_12BIT_1S, INA219_RES_12BIT_1S, INA219_MODE_CONT_SHUNT_BUS));
-
-    ESP_LOGI(TAG, "Calibrating INA219");
-
-    ESP_ERROR_CHECK(ina219_calibrate(&dev, (float)CONFIG_EXAMPLE_MAX_CURRENT, (float)CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM / 1000.0f));
-
-    float bus_voltage, shunt_voltage, current, power;
-
-    ESP_LOGI(TAG, "Starting the loop");
-    while (1)
-    {
-        ESP_ERROR_CHECK(ina219_get_bus_voltage(&dev, &bus_voltage));
-        ESP_ERROR_CHECK(ina219_get_shunt_voltage(&dev, &shunt_voltage));
-        ESP_ERROR_CHECK(ina219_get_current(&dev, &current));
-        ESP_ERROR_CHECK(ina219_get_power(&dev, &power));
-        /* Using float in printf() requires non-default configuration in
-         * sdkconfig. See sdkconfig.defaults.esp32 and
-         * sdkconfig.defaults.esp8266  */
-        printf("VBUS: %.04f V, VSHUNT: %.04f mV, IBUS: %.04f mA, PBUS: %.04f mW\n",
-                bus_voltage, shunt_voltage * 1000, current * 1000, power * 1000);
-
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
+void getTempAddresses(DeviceAddress *tempSensorAddresses) {
+	unsigned int numberFound = 0;
+	reset_search();
+	// search for 2 addresses on the oneWire protocol
+	while (search(tempSensorAddresses[numberFound],true)) {
+		numberFound++;
+		if (numberFound == 2) break;
+	}
+	// if 2 addresses aren't found then flash the LED rapidly
+	while (numberFound != 2) {
+		numberFound = 0;
+		digitalWrite(LED, HIGH);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+		digitalWrite(LED, LOW);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+		// search in the loop for the temp sensors as they may hook them up
+		reset_search();
+		while (search(tempSensorAddresses[numberFound],true)) {
+			numberFound++;
+			if (numberFound == 2) break;
+		}
+	}
+	return;
 }
 
-void app_main()
-{
-    ESP_ERROR_CHECK(i2cdev_init());
-    xTaskCreate(task, "test", configMINIMAL_STACK_SIZE * 8, NULL, 5, NULL);
+void app_main(void){
+    gpio_reset_pin(LED);
+    /* Set the GPIO as a push/pull output */
+    gpio_set_direction(LED, GPIO_MODE_OUTPUT);
+
+	ds18b20_init(TEMP_BUS);
+	getTempAddresses(tempSensors);
+	ds18b20_setResolution(tempSensors,2,10);
+
+	printf("Address 0: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x \n", tempSensors[0][0],tempSensors[0][1],tempSensors[0][2],tempSensors[0][3],tempSensors[0][4],tempSensors[0][5],tempSensors[0][6],tempSensors[0][7]);
+	printf("Address 1: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x \n", tempSensors[1][0],tempSensors[1][1],tempSensors[1][2],tempSensors[1][3],tempSensors[1][4],tempSensors[1][5],tempSensors[1][6],tempSensors[1][7]);
+
+	while (1) {
+		ds18b20_requestTemperatures();
+		float temp1 = ds18b20_getTempF((DeviceAddress *)tempSensors[0]);
+		float temp2 = ds18b20_getTempF((DeviceAddress *)tempSensors[1]);
+		float temp3 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]);
+		float temp4 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]);
+		printf("Temperatures: %0.1fF %0.1fF\n", temp1,temp2);
+		printf("Temperatures: %0.1fC %0.1fC\n", temp3,temp4);
+
+		float cTemp = ds18b20_get_temp();
+		printf("Temperature: %0.1fC\n", cTemp);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
 }
