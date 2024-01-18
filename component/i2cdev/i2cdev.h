@@ -32,14 +32,14 @@
  *
  * MIT Licensed as described in the file LICENSE
  */
-#ifndef I2CDEV
-#define I2CDEV
+#ifndef __I2CDEV_H__
+#define __I2CDEV_H__
 
 #include <driver/i2c.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <esp_err.h>
-#include "esp_idf_lib_helpers.h"
+#include <esp_idf_lib_helpers.h>
 
 #ifdef __cplusplus
 extern "C" {
