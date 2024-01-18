@@ -32,8 +32,8 @@
  *
  * MIT Licensed as described in the file LICENSE
  */
-#ifndef __I2CDEV_H__
-#define __I2CDEV_H__
+#ifndef I2CDEV
+#define I2CDEV
 
 #include <driver/i2c.h>
 #include <freertos/FreeRTOS.h>

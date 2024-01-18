@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#if !defined(__ESP_IDF_LIB_HELPERS__H__)
-#define __ESP_IDF_LIB_HELPERS__H__
+#if !defined(ESP_IDF_LIB_HELPERS)
+#define ESP_IDF_LIB_HELPERS
 
 /* XXX this header file does not need to include freertos/FreeRTOS.h.
  * but without it, ESP8266 RTOS SDK does not include `sdkconfig.h` in correct

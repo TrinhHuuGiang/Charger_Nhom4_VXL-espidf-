@@ -5,6 +5,10 @@
         "sdkconfig.h": "c",
         "*.ipp": "c",
         "string.h": "c",
-        "ina219.h": "c"
+        "ina219.h": "c",
+        "esp_idf_lib_helpers.h": "c",
+        "esp_idf_version.h": "c",
+        "i2cdev.h": "c",
+        "freertos.h": "c"
     }
 }
