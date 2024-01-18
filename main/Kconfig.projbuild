@@ -1,37 +1,122 @@
 menu "Pin out configuration"
-    config EXAMPLE_MAX_CURRENT
-        int "Expected max current in Ampare to measure"
-        default 3
-        help
-            Expected max current in Ampare. Note that the value must be int, not float.
+    config BUTTON_PIN_1
+        int "Pin cho nut bam 1"
+        default 25
+        help 
+            cau hinh input pull up
 
-    config EXAMPLE_SHUNT_RESISTOR_MILLI_OHM
-        int "Shunt resistor value in milliohm)"
+    config BUTTON_PIN_2
+        int "Pin cho nut bam 2"
+        default 26
+        help 
+            cau hinh intput pull up
+
+    config BUTTON_PIN_3
+        int "Pin cho nut bam 3"
+        default 27
+        help 
+            cau hinh input pull up
+
+    config RELAY_PIN_1
+        int "Pin cho relay 1 (ngat sac 1)"
+        default 5
+        help 
+            cau hinh output
+        
+    config RELAY_PIN_2
+        int "Pin cho relay 2 (ngat sac 2)"
+        default 17
+        help 
+            cau hinh output
+        
+    config RELAY_PIN_3
+        int "Pin cho relay 3 (relay nguon)"
+        default 16
+        help 
+            cau hinh output
+
+    config BUZZER_PIN
+        int "Pin cho buzzer"
+        default 33
+        help
+            cau hinh output
+    
+    config SCK_PIN
+        int "Pin xung clock SPI"
+        default 14
+        help
+            ...
+
+    config MOSI_PIN
+        int "master out slave in SPI"
+        default 12
+        help 
+            ...
+
+    config MISO_PIN
+        int "master in slave out SPI"
+        default 13
+        help 
+            ...
+
+    config CS_PIN_1
+        int "Pin cho MCP41010 1"
+        default 4
+        help
+            ...
+            
+    config CS_PIN_2
+        int "Pin cho MCP41010 2"
+        default 2
+        help
+            ...
+
+    config CS_PIN_3
+        int "Pin cho module micro sd"
+        default 15
+        help
+            ...
+
+    config DQ_PIN
+        int "1 Wire bus data"
+        default 23
+        help 
+            cau hinh pullup
+    
+    config SCL_PIN
+        int "SCL pin giao tiep i2c"
+        default 22
+        help
+            cau hinh pullup
+
+    config SDA_PIN
+        int "SDA pin giao tiep i2c"
+        default 21
+        help
+            cau hinh pullup
+
+    config I2C_ADDR1
+        hex "dia chi INA219 so 1"
+        default 0x40
+        help 
+            0x40 khi A0_GND A1_GND
+
+    config I2C_ADDR2
+        hex "dia chi INA219 so 2"
+        default 0x44
+        help 
+            0x44 khi A0_GND A1_3V3
+
+    config MAX_CURRENT
+        int "dong toi da INA219, mac dinh de 3A"
+        default 3
+        help 
+            don vi ampe
+
+    config SHUNT_RES
+        int "dien tro shunt thuong co gia tri 100mOhm, khong duoc de 0"
         default 100
         help
-            Shunt resistor value in milliohm. Must not be zero.
+            don vi mili ohm
 
-    config EXAMPLE_I2C_ADDR
-        hex "I2C address of INA219"
-        default 0x40
-        help
-            I2C address of INA219. The default is A1 pin to GND, and A0 pin to
-            GND (`INA219_ADDR_GND_GND`, or `0x40`). See available options in
-            ina219.h.
-
-    config EXAMPLE_I2C_MASTER_SCL
-        int "SCL GPIO Number"
-        default 5 if IDF_TARGET_ESP8266
-        default 6 if IDF_TARGET_ESP32C3
-        default 19 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-        help
-            GPIO number for I2C Master clock line.
-
-    config EXAMPLE_I2C_MASTER_SDA
-        int "SDA GPIO Number"
-        default 4 if IDF_TARGET_ESP8266
-        default 5 if IDF_TARGET_ESP32C3
-        default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-        help
-            GPIO number for I2C Master data line.
 endmenu
