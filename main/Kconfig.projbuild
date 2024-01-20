@@ -1,21 +1,21 @@
-menu "Pin out configuration"
+menu "Pin out gpio,i2c,spi,1wire,... configuration"
     config BUTTON_PIN_1
         int "Pin cho nut bam 1"
         default 25
         help 
-            cau hinh input pull up
+            cau hinh input pull up, khai bao interupt
 
     config BUTTON_PIN_2
         int "Pin cho nut bam 2"
         default 26
         help 
-            cau hinh intput pull up
+            cau hinh intput pull up, khai bao interupt
 
     config BUTTON_PIN_3
         int "Pin cho nut bam 3"
         default 27
         help 
-            cau hinh input pull up
+            cau hinh input pull up, khai bao interupt
 
     config RELAY_PIN_1
         int "Pin cho relay 1 (ngat sac 1)"
@@ -49,13 +49,13 @@ menu "Pin out configuration"
 
     config MOSI_PIN
         int "master out slave in SPI"
-        default 12
+        default 13
         help 
             ...
 
     config MISO_PIN
         int "master in slave out SPI"
-        default 13
+        default 12
         help 
             ...
 
@@ -94,6 +94,12 @@ menu "Pin out configuration"
         default 21
         help
             cau hinh pullup
+
+    config I2C_PORT
+        int "I2C port Mac dinh 0"
+        default 0
+        help
+            ...
 
     config I2C_ADDR1
         hex "dia chi INA219 so 1"

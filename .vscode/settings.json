@@ -9,6 +9,14 @@
         "esp_idf_lib_helpers.h": "c",
         "esp_idf_version.h": "c",
         "i2cdev.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "esp_vfs_fat.h": "c",
+        "vfs_fat_internal.h": "c",
+        "ff.h": "c",
+        "stat.h": "c",
+        "sdmmc_cmd.h": "c",
+        "string": "c",
+        "microsd.h": "c",
+        "cstring": "c"
     }
 }

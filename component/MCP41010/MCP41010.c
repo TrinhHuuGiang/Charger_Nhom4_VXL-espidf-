@@ -4,15 +4,9 @@
 #include <string.h>
 static const int SPI_Frequency = SPI_MASTER_FREQ_20M;
 
-void mcp41010_init(MCP_t * dev,float totalKOhms ,spi_host_device_t HOST_ID,
-gpio_num_t MOSI_PIN, gpio_num_t SCK_PIN,gpio_num_t CS_PIN)
+esp_err_t MCP41010_bus_config(gpio_num_t MOSI_PIN, gpio_num_t SCK_PIN, spi_host_device_t HOST_ID)
 {
-	//gpio_pad_select_gpio( CS_PIN );
-	gpio_reset_pin( CS_PIN );
-	gpio_set_direction( CS_PIN, GPIO_MODE_OUTPUT );
-	gpio_set_level( CS_PIN, 1 );
-
-	spi_bus_config_t buscfg = {
+		spi_bus_config_t buscfg = {
 		.mosi_io_num = MOSI_PIN,
 		.miso_io_num = -1,
 		.sclk_io_num = SCK_PIN,
@@ -21,8 +15,17 @@ gpio_num_t MOSI_PIN, gpio_num_t SCK_PIN,gpio_num_t CS_PIN)
 		.max_transfer_sz = 0,
 		.flags = 0
 	};
-	spi_bus_initialize( HOST_ID, &buscfg, SPI_DMA_CH_AUTO ); // khoi tao bus
+	return spi_bus_initialize( HOST_ID, &buscfg, SPI_DMA_CH_AUTO ); // khoi tao bus
+}
 
+void MCP41010_init(MCP_t * dev,float totalKOhms ,gpio_num_t CS_PIN, spi_host_device_t HOST_ID)
+{
+	//Khoi tao chan CS;
+	gpio_reset_pin( CS_PIN );
+	gpio_set_direction( CS_PIN, GPIO_MODE_OUTPUT );
+	gpio_set_level( CS_PIN, 1 );
+
+	//Cau hinh thiet bi
 	spi_device_interface_config_t devcfg;
 	memset(&devcfg, 0, sizeof(devcfg)); // khoi tao vung nho chua du lieu devcfg
 	devcfg.clock_speed_hz = SPI_Frequency;
