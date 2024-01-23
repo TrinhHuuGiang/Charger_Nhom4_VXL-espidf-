@@ -9,6 +9,6 @@ void MicroSD_create_file(const char *file);
 void MicroSD_write_file(const char *file, char *linetext);
 void MicroSD_read_file(const char *file);
 void MicroSD_delete_file(const char *file);
-void MicrtSD_unmount();
+void MicroSD_unmount();
 
 #endif

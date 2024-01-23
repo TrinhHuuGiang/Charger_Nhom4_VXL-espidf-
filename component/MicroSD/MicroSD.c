@@ -17,7 +17,7 @@
 #include "MicroSD.h"
 
 static const char *TAG = "MicroSD";
-const char mount_point[] = "/sdcard";
+const char mount_point[] = "/thesd";
 static sdmmc_card_t *card;
 static sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 
@@ -166,7 +166,7 @@ void MicroSD_delete_file(const char *file)
     unlink(file_one);
     ESP_LOGI(TAG, "Deleted file %s", file_one);
 }
-void MicrtSD_unmount(){
+void MicroSD_unmount(){
     // All done, unmount partition and disable SPI peripheral
     esp_vfs_fat_sdcard_unmount(mount_point, card);
     ESP_LOGI(TAG, "Card unmounted");

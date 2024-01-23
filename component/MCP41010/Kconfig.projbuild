@@ -1,0 +1,8 @@
+menu "z_____MCP41010 CONFIG"
+
+    config SPI_FREQUENCY
+        int "(HZ)set frequency of mcp41010"
+        default 1000000
+        help
+            ...
+endmenu

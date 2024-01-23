@@ -12,5 +12,5 @@ void relay_init(gpio_num_t RELAY_PIN, gpio_mode_t GPIO_MODE_OUTPUT, uint32_t LEV
 //setlevel
 void relay_set_level(gpio_num_t RELAY_PIN, uint32_t LEVEL)
 {
-    gpio_set_level(RELAY_PIN, LEVEL);
+    gpio_set_level(RELAY_PIN, LEVEL);//0:low. 1:high
 }

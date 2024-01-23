@@ -17,6 +17,11 @@
         "sdmmc_cmd.h": "c",
         "string": "c",
         "microsd.h": "c",
-        "cstring": "c"
+        "cstring": "c",
+        "_stdint.h": "c",
+        "stdio.h": "c",
+        "_types.h": "c",
+        "types.h": "c",
+        "*.inc": "c"
     }
 }

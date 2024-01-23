@@ -1,0 +1,7 @@
+menu "z_____BUZZER CONFIG"
+    config BUZZER_FREQ
+        int "cai dat tan so am thanh 16HZ-20kHZ"
+        default 5000
+        help
+            ...
+endmenu

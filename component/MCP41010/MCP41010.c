@@ -1,9 +1,11 @@
 #include "MCP41010.h"
+#include <string.h> //memset
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
-#include <string.h>
-static const int SPI_Frequency = SPI_MASTER_FREQ_20M;
+//static const int SPI_Frequency = SPI_MASTER_FREQ_10M;
 
+// khoi tao bus spi
+// ham nay khong can goi vi da goi 1 lan o thu vien microsd 
 esp_err_t MCP41010_bus_config(gpio_num_t MOSI_PIN, gpio_num_t SCK_PIN, spi_host_device_t HOST_ID)
 {
 		spi_bus_config_t buscfg = {
@@ -18,6 +20,7 @@ esp_err_t MCP41010_bus_config(gpio_num_t MOSI_PIN, gpio_num_t SCK_PIN, spi_host_
 	return spi_bus_initialize( HOST_ID, &buscfg, SPI_DMA_CH_AUTO ); // khoi tao bus
 }
 
+// khoi tao thiet bi
 void MCP41010_init(MCP_t * dev,float totalKOhms ,gpio_num_t CS_PIN, spi_host_device_t HOST_ID)
 {
 	//Khoi tao chan CS;
@@ -28,7 +31,7 @@ void MCP41010_init(MCP_t * dev,float totalKOhms ,gpio_num_t CS_PIN, spi_host_dev
 	//Cau hinh thiet bi
 	spi_device_interface_config_t devcfg;
 	memset(&devcfg, 0, sizeof(devcfg)); // khoi tao vung nho chua du lieu devcfg
-	devcfg.clock_speed_hz = SPI_Frequency;
+	devcfg.clock_speed_hz = CONFIG_SPI_FREQUENCY;
 	devcfg.queue_size = 7;
 	devcfg.mode = 0;
 	devcfg.flags = SPI_DEVICE_NO_DUMMY;
@@ -57,6 +60,7 @@ void MCP41010_setWiper(MCP_t * dev,  uint8_t value, uint8_t potentiometer)
 	spi_transaction_t SPITransaction;
 
 	// khoi tao vung nho void *memset(void *ptr, int value, size_t num);
+	// set toan bo gia tri*ptr thanh value
 	/*ptr: Con trỏ đến vùng nhớ cần thiết lập.
 	value: Giá trị muốn gán cho mỗi byte trong vùng nhớ.
 	num: Số lượng byte cần thiết lập.*/

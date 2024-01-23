@@ -1,18 +1,18 @@
-menu "Pin out gpio,i2c,spi,1wire,... configuration"
-    config BUTTON_PIN_1
-        int "Pin cho nut bam 1"
+menu "z_____Pin out gpio,i2c,spi,1wire,... configuration"
+    config POWER_PIN
+        int "Pin cho nut bam 1 (power)"
         default 25
         help 
             cau hinh input pull up, khai bao interupt
 
-    config BUTTON_PIN_2
-        int "Pin cho nut bam 2"
+    config MENU_PIN
+        int "Pin cho nut bam 2 (menu)"
         default 26
         help 
             cau hinh intput pull up, khai bao interupt
 
-    config BUTTON_PIN_3
-        int "Pin cho nut bam 3"
+    config SELECT_PIN
+        int "Pin cho nut bam 3 (select)"
         default 27
         help 
             cau hinh input pull up, khai bao interupt
@@ -29,7 +29,7 @@ menu "Pin out gpio,i2c,spi,1wire,... configuration"
         help 
             cau hinh output
         
-    config RELAY_PIN_3
+    config RELAY_NGUON
         int "Pin cho relay 3 (relay nguon)"
         default 16
         help 
@@ -96,7 +96,7 @@ menu "Pin out gpio,i2c,spi,1wire,... configuration"
             cau hinh pullup
 
     config I2C_PORT
-        int "I2C port Mac dinh 0"
+        int "I2C port Mac dinh 0 cho GPIO 21 va 22"
         default 0
         help
             ...

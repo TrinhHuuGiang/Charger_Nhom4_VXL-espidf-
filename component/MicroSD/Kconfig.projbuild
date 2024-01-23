@@ -1,4 +1,4 @@
-menu "MICROSD CARD CONFIG"
+menu "z_____MICROSD CARD CONFIG"
 
     config FORMAT_IF_MOUNT_FAILED
         bool "Format the card if mount failed"
@@ -8,7 +8,7 @@ menu "MICROSD CARD CONFIG"
                     the mount has failed.
     config MAX_FREQUENCY
         int "(kHZ)max frequency of microsd"
-        default 20
+        default 1000
         help
             ...
 endmenu
