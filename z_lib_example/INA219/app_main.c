@@ -11,7 +11,8 @@
 #define I2c_ADDR2 0x44
 #define CONFIG_EXAMPLE_I2C_MASTER_SDA 21
 #define CONFIG_EXAMPLE_I2C_MASTER_SCL 22
-
+#define CONFIG_EXAMPLE_MAX_CURRENT 3
+#define CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM 100
 const static char *TAG = "INA219_example";
 
 void task(void *pvParameters)
@@ -20,7 +21,7 @@ void task(void *pvParameters)
     memset(&dev, 0, sizeof(ina219_t));
 
     assert(CONFIG_EXAMPLE_SHUNT_RESISTOR_MILLI_OHM > 0);
-    ESP_ERROR_CHECK(ina219_init_desc(&dev, I2C_ADDR, I2C_PORT, CONFIG_EXAMPLE_I2C_MASTER_SDA, CONFIG_EXAMPLE_I2C_MASTER_SCL));
+    ESP_ERROR_CHECK(ina219_init_desc(&dev, I2C_ADDR1, I2C_PORT, CONFIG_EXAMPLE_I2C_MASTER_SDA, CONFIG_EXAMPLE_I2C_MASTER_SCL));
     ESP_LOGI(TAG, "Initializing INA219");
     ESP_ERROR_CHECK(ina219_init(&dev));
 

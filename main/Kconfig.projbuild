@@ -83,6 +83,19 @@ menu "z_____Pin out gpio,i2c,spi,1wire,... configuration"
         help 
             cau hinh pullup
     
+
+    config 18B_ADDR1
+        hex "18B20 adress pin 1 (HEX)"
+        default 0x11111111
+        help 
+            ...
+                    
+    config 18B_ADDR2
+        hex "18B20 adress pin 2 (HEX)"
+        default 0x11111111
+        help 
+            ...
+
     config SCL_PIN
         int "SCL pin giao tiep i2c"
         default 22
@@ -101,13 +114,13 @@ menu "z_____Pin out gpio,i2c,spi,1wire,... configuration"
         help
             ...
 
-    config I2C_ADDR1
+    config INA_ADDR1
         hex "dia chi INA219 so 1"
         default 0x40
         help 
             0x40 khi A0_GND A1_GND
 
-    config I2C_ADDR2
+    config INA_ADDR2
         hex "dia chi INA219 so 2"
         default 0x44
         help 
@@ -124,5 +137,21 @@ menu "z_____Pin out gpio,i2c,spi,1wire,... configuration"
         default 100
         help
             don vi mili ohm
+    
+    config LCD_ADDR
+        hex "dia chi mac dinh LCD1602"
+        default 0x27
+        help 
+            ......
+    config LCD_COLS
+        int "so cot lcd"
+        default 16
+        help 
+            ......
+    config LCD_ROWS
+        int "so hang lcd"
+        default 2
+        help 
+            ......
 
 endmenu

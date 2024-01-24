@@ -22,6 +22,9 @@
         "stdio.h": "c",
         "_types.h": "c",
         "types.h": "c",
-        "*.inc": "c"
+        "*.inc": "c",
+        "bitset": "c",
+        "functional": "c",
+        "regex": "c"
     }
 }
