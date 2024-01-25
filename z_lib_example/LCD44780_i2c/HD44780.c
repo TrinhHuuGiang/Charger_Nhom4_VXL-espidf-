@@ -102,6 +102,7 @@ void LCD_init(uint8_t addr, uint8_t dataPin, uint8_t clockPin, uint8_t cols, uin
     LCD_writeByte(LCD_DISPLAY_ON, LCD_COMMAND);                         // Ensure LCD is set to on
 }
 
+
 void LCD_setCursor(uint8_t col, uint8_t row)
 {
     if (row > LCD_rows - 1) {

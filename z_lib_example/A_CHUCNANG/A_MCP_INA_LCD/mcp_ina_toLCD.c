@@ -1,3 +1,9 @@
+// su dung file nay de dieu chinh mcp1 thong qua button select
+// button power duoc su dung de bat tat relay nguon
+// gia tri dien tro se in ra lcd dong 1
+// ina219 se do dong dien, dien ap qua pin1 va hien thi o dong 2
+//chưa hoàn thiện
+
 //system
 #include <string.h>
 #include <sys/types.h>
@@ -6,7 +12,6 @@
 #include "freertos/FreeRTOS.h" // tao task freertos
 #include "freertos/task.h" //task
 //esp32 config
-#include "esp_sleep.h"
 #include "driver/gpio.h"// driver gpio, interrupt
 #include "sdkconfig.h" // cau hinh menuconfig
 #include "esp_log.h" // log thong bao
@@ -29,9 +34,9 @@ static const char *TAG = "Main";
 
 /*__________Khai bao bien______________________________________*/
 // trang thai nut bam
-static bool power_stat = 1, menu_stat = 0,select_stat = 0; // trang thai 0 la chua duoc nhan nut
+static bool power_stat = 1,menu_stat = 0,select_stat = 0; // trang thai 0 la chua duoc nhan nut
 // trang thai relay
-static bool relay_power_stat = 1, relay_1_stat = 0, relay_2_stat = 0; //trang thai relay
+static bool relay_power_stat = 1,relay_1_stat = 0, relay_2_stat = 0;
 //gia tri MCP41010 cho tung module
 static MCP_t mcp1, mcp2; 
 static uint8_t cur_value1 = 0, DIRECTION1 = 1, potentiometer1 = METER_0;
@@ -51,6 +56,7 @@ static void IRAM_ATTR powerPin_interrupt_handler(void *args);
 static void IRAM_ATTR menuPin_interrupt_handler(void *args);
 static void IRAM_ATTR selectPin_interrupt_handler(void *args);
 
+
 //Ham khoi tao component
 void Component_init();
 
@@ -65,22 +71,36 @@ void task1(void *pvParameters); //lay va hien thi do dac len man ihin
 
 /*____________APP_MAIN________________________________*/
 void app_main(void)
-{   
-    esp_sleep_enable_ext0_wakeup(CONFIG_POWER_PIN, 0);
+{
     // khởi tạo các ngoại vi
     Component_init();
     xTaskCreate(task1, "doluong_hienthi", 2048, NULL, 2, NULL);
-
-    //done
-    xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
     return;
 }
 /*____________Dinhnghia_______________________________*/
 //khai bao ham ngat cho tung nut bam
 static void IRAM_ATTR powerPin_interrupt_handler(void *args)
 {
-        //deepsleep
-        esp_deep_sleep_start();
+    power_stat = !power_stat; // doi trang thai bien power
+    relay_power_stat=power_stat; //doi trang thai bien relay nguon
+    if(power_stat)
+    {
+        //buzzer keu
+        xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
+        //bat nguon
+        relay_set_level(CONFIG_RELAY_NGUON, power_stat);
+        //set task
+        task1_stat = true;
+    }
+    else
+    {
+        //buzzer keu
+        xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
+        //tat nguon
+        relay_set_level(CONFIG_RELAY_NGUON, power_stat);
+        //set task
+        task1_stat = false;
+    }
 }
 static void IRAM_ATTR menuPin_interrupt_handler(void *args)
 {
@@ -167,14 +187,6 @@ void Component_init()
     button_init(CONFIG_POWER_PIN, GPIO_MODE_INPUT);
     button_init(CONFIG_MENU_PIN, GPIO_MODE_INPUT);
     button_init(CONFIG_SELECT_PIN, GPIO_MODE_INPUT);
-    // kiem tra neu chua bo tay ra khoi nut
-    // tranh xung dot khi khai bao ngat
-    while((button_get_level(CONFIG_POWER_PIN))==0) 
-    {
-        ESP_LOGI(TAG,"bo tay ra");
-        vTaskDelay(pdMS_TO_TICKS(10));
-        
-    }
     //them ngat, ham ngat cho gpio button
     ESP_LOGI(TAG,"BUTTON_ISR");
     gpio_isr_handler_add(CONFIG_POWER_PIN, powerPin_interrupt_handler, (void *)CONFIG_POWER_PIN);

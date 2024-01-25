@@ -12,9 +12,9 @@ void button_init(uint8_t BUTTON_PIN, uint8_t GPIO_MODE_INPUT)
     // khai bao chuc nang input
     gpio_set_direction(BUTTON_PIN,GPIO_MODE_INPUT);
 
-    // disable pull up vi co dien tro pull up o ngoai
+    // enable pullup 
     gpio_pulldown_dis(BUTTON_PIN);
-    gpio_pullup_dis(BUTTON_PIN);
+    gpio_pullup_en(BUTTON_PIN);
 
     /*!<GPIO_INTR_POSEDGE: GPIO interrupt type : rising edge                  */
     gpio_set_intr_type(BUTTON_PIN, GPIO_INTR_POSEDGE);

@@ -25,6 +25,8 @@
         "*.inc": "c",
         "bitset": "c",
         "functional": "c",
-        "regex": "c"
+        "regex": "c",
+        "i2c.h": "c",
+        "spi_master.h": "c"
     }
 }

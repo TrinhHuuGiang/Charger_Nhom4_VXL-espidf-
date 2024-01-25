@@ -1,3 +1,4 @@
+// file nay log du lieu 2 cam bien ina va dua len man hinh
 //system
 #include <string.h>
 #include <sys/types.h>
@@ -6,7 +7,6 @@
 #include "freertos/FreeRTOS.h" // tao task freertos
 #include "freertos/task.h" //task
 //esp32 config
-#include "esp_sleep.h"
 #include "driver/gpio.h"// driver gpio, interrupt
 #include "sdkconfig.h" // cau hinh menuconfig
 #include "esp_log.h" // log thong bao
@@ -29,9 +29,9 @@ static const char *TAG = "Main";
 
 /*__________Khai bao bien______________________________________*/
 // trang thai nut bam
-static bool power_stat = 1, menu_stat = 0,select_stat = 0; // trang thai 0 la chua duoc nhan nut
+static bool power_stat = 0,menu_stat = 0,select_stat = 0; // trang thai 0 la chua duoc nhan nut
 // trang thai relay
-static bool relay_power_stat = 1, relay_1_stat = 0, relay_2_stat = 0; //trang thai relay
+static int32_t relay_power_stat = 1,relay_1_stat = 0, relay_2_stat = 0;
 //gia tri MCP41010 cho tung module
 static MCP_t mcp1, mcp2; 
 static uint8_t cur_value1 = 0, DIRECTION1 = 1, potentiometer1 = METER_0;
@@ -42,8 +42,6 @@ static float bus_voltage1, shunt_voltage1, current1, power1;
 static float bus_voltage2, shunt_voltage2, current2, power2;
 //lcd
 static char LCD_BUFFER[LCD_BUFFER_SIZE];
-// task status
-bool task1_stat = true;
 
 /*__________Khai bao ham_______________________________________*/
 //khai bao ham ngat cho nut bam
@@ -51,36 +49,67 @@ static void IRAM_ATTR powerPin_interrupt_handler(void *args);
 static void IRAM_ATTR menuPin_interrupt_handler(void *args);
 static void IRAM_ATTR selectPin_interrupt_handler(void *args);
 
+
 //Ham khoi tao component
 void Component_init();
 
-//bat tat coi
-void Buzzer_set_duty_task(void *pvParameters);
-
-//INA get current, voltage
-void INA_get_current_Voltage();
-
-//task
-void task1(void *pvParameters); //lay va hien thi do dac len man ihin
-
 /*____________APP_MAIN________________________________*/
 void app_main(void)
-{   
-    esp_sleep_enable_ext0_wakeup(CONFIG_POWER_PIN, 0);
-    // khởi tạo các ngoại vi
+{
     Component_init();
-    xTaskCreate(task1, "doluong_hienthi", 2048, NULL, 2, NULL);
 
-    //done
-    xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
-    return;
+
+    //log ina219 , day len lcd va terminal
+    ESP_LOGI(TAG, "Starting the loop");
+    while (1)
+    {
+        ESP_ERROR_CHECK(ina219_get_bus_voltage(&ina1, &bus_voltage1));
+        ESP_ERROR_CHECK(ina219_get_shunt_voltage(&ina1, &shunt_voltage1));
+        ESP_ERROR_CHECK(ina219_get_current(&ina1, &current1));
+        ESP_ERROR_CHECK(ina219_get_power(&ina1, &power1));
+
+        ESP_ERROR_CHECK(ina219_get_bus_voltage(&ina2, &bus_voltage2));
+        ESP_ERROR_CHECK(ina219_get_shunt_voltage(&ina2, &shunt_voltage2));
+        ESP_ERROR_CHECK(ina219_get_current(&ina2, &current2));
+        ESP_ERROR_CHECK(ina219_get_power(&ina2, &power2));
+        // in len terminal
+        printf("_____________________________________________________________________\n");
+        printf("INA1: VBUS: %.04f V, VSHUNT: %.04f mV, IBUS: %.04f mA, PBUS: %.04f mW\n",
+                bus_voltage1, shunt_voltage1 * 1000, current1 * 1000, power1 * 1000);
+
+        printf("INA2: VBUS: %.04f V, VSHUNT: %.04f mV, IBUS: %.04f mA, PBUS: %.04f mW\n",
+                bus_voltage2, shunt_voltage2 * 1000, current2 * 1000, power2 * 1000);
+
+        // in len lcd
+        LCD_clearScreen();
+        // in ina1
+        // Gán giá trị khoảng trắng cho mảng lcdBuffer
+        for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
+        LCD_BUFFER[i] = ' ';
+        }
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"1:%4.1fmA|%2.1fV",current1*1000,bus_voltage1);
+        LCD_setCursor(0,0); // cot truoc hang sau 
+        LCD_writeStr(LCD_BUFFER);
+        //in ina2
+        // Gán giá trị khoảng trắng cho mảng lcdBuffer
+        for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
+        LCD_BUFFER[i] = ' ';
+        }
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"2:%4.1fmA|%2.1fV",current2*1000,bus_voltage2);
+        LCD_setCursor(0,1); // cot truoc hang sau 
+        LCD_writeStr(LCD_BUFFER);
+
+        //tam dung 10s
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
 }
+
+
 /*____________Dinhnghia_______________________________*/
 //khai bao ham ngat cho tung nut bam
 static void IRAM_ATTR powerPin_interrupt_handler(void *args)
 {
-        //deepsleep
-        esp_deep_sleep_start();
+    power_stat = !power_stat; // doi trang thai
 }
 static void IRAM_ATTR menuPin_interrupt_handler(void *args)
 {
@@ -95,6 +124,20 @@ static void IRAM_ATTR selectPin_interrupt_handler(void *args)
 void Component_init()
 {
     ESP_LOGI(TAG,"Dang khoi tao thiet bi:");
+/*__________BUTTON__________*/
+    // cai driver ngat
+    ESP_LOGI(TAG,"ISR");
+    gpio_install_isr_service(0);
+    // Khoi tao button
+    ESP_LOGI(TAG,"BUTTON");
+    button_init(CONFIG_POWER_PIN, GPIO_MODE_INPUT);
+    button_init(CONFIG_MENU_PIN, GPIO_MODE_INPUT);
+    button_init(CONFIG_SELECT_PIN, GPIO_MODE_INPUT);
+    //them ngat, ham ngat cho gpio button
+    ESP_LOGI(TAG,"BUTTON_ISR");
+    gpio_isr_handler_add(CONFIG_POWER_PIN, powerPin_interrupt_handler, (void *)CONFIG_POWER_PIN);
+    gpio_isr_handler_add(CONFIG_MENU_PIN, menuPin_interrupt_handler, (void *)CONFIG_MENU_PIN);
+    gpio_isr_handler_add(CONFIG_SELECT_PIN, selectPin_interrupt_handler, (void *)CONFIG_SELECT_PIN);
 /*__________RELAY___________*/
     // khoi tao relay
     ESP_LOGI(TAG,"RELAY");
@@ -152,79 +195,10 @@ void Component_init()
     LCD_writeStr("Smart Charger");
     LCD_setCursor(0,1);
     LCD_writeStr("Nhom 4|ML:145579");
-    vTaskDelay(pdMS_TO_TICKS(1000));
+
 /*__________18B20___________*/
 
 
 /*__________SD______________*/
 
-/*__________BUTTON__________*/
-    // cai driver ngat
-    ESP_LOGI(TAG,"ISR");
-    gpio_install_isr_service(0);
-    // Khoi tao button
-    ESP_LOGI(TAG,"BUTTON");
-    button_init(CONFIG_POWER_PIN, GPIO_MODE_INPUT);
-    button_init(CONFIG_MENU_PIN, GPIO_MODE_INPUT);
-    button_init(CONFIG_SELECT_PIN, GPIO_MODE_INPUT);
-    // kiem tra neu chua bo tay ra khoi nut
-    // tranh xung dot khi khai bao ngat
-    while((button_get_level(CONFIG_POWER_PIN))==0) 
-    {
-        ESP_LOGI(TAG,"bo tay ra");
-        vTaskDelay(pdMS_TO_TICKS(10));
-        
-    }
-    //them ngat, ham ngat cho gpio button
-    ESP_LOGI(TAG,"BUTTON_ISR");
-    gpio_isr_handler_add(CONFIG_POWER_PIN, powerPin_interrupt_handler, (void *)CONFIG_POWER_PIN);
-    gpio_isr_handler_add(CONFIG_MENU_PIN, menuPin_interrupt_handler, (void *)CONFIG_MENU_PIN);
-    gpio_isr_handler_add(CONFIG_SELECT_PIN, selectPin_interrupt_handler, (void *)CONFIG_SELECT_PIN);
-}
-
-void Buzzer_set_duty_task(void *pvParameters)
-{
-    Buzzer_set_duty(150);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    Buzzer_set_duty(0);
-    vTaskDelete(NULL);
-}
-
-void INA_get_current_Voltage(){
-        
-        //log ina219 , day len lcd va terminal
-        ESP_ERROR_CHECK(ina219_get_bus_voltage(&ina1, &bus_voltage1));
-        ESP_ERROR_CHECK(ina219_get_shunt_voltage(&ina1, &shunt_voltage1));
-        ESP_ERROR_CHECK(ina219_get_current(&ina1, &current1));
-        ESP_ERROR_CHECK(ina219_get_power(&ina1, &power1));
-
-        // in dong dien, dien ap cua ina sau khi lắp pin len terminal
-        // in dien tro tinh toan cua mcp len terminal
-        // co 2 truong hop can xem la khi bam button, relay mo ra thi dong dien, dien ap thay doi ra sao
-
-        printf("_____________________________________________________________________\n");
-        printf("INA1: VBUS: %.04f V, VSHUNT: %.04f mV, IBUS: %.04f mA, PBUS: %.04f mW\n",
-                bus_voltage1, shunt_voltage1 * 1000, current1 * 1000, power1 * 1000);
-
-        // in len lcd
-        LCD_clearScreen();
-        // in ina1
-        // Gán giá trị khoảng trắng cho mảng lcdBuffer
-        for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
-        LCD_BUFFER[i] = ' ';
-        }
-        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"1:%4.1fmA|%2.1fV",current1*1000,bus_voltage1);
-        LCD_setCursor(0,1); // cot truoc hang sau 
-        LCD_writeStr(LCD_BUFFER);
-}
-
-void task1(void *pvParameters){
-    while(1)
-    {
-        if (task1_stat)
-        {
-            INA_get_current_Voltage();
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }

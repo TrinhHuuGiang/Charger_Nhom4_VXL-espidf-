@@ -74,7 +74,7 @@ void LCD_init(uint8_t addr, uint8_t dataPin, uint8_t clockPin, uint8_t cols, uin
     SCL_pin = clockPin;
     LCD_cols = cols;
     LCD_rows = rows;
-    I2C_init();
+      I2C_init();
     vTaskDelay(100 / portTICK_RATE_MS);                                 // Initial 40 mSec delay
 
     // Reset the LCD controller
@@ -100,6 +100,18 @@ void LCD_init(uint8_t addr, uint8_t dataPin, uint8_t clockPin, uint8_t cols, uin
     ets_delay_us(80); 
 
     LCD_writeByte(LCD_DISPLAY_ON, LCD_COMMAND);                         // Ensure LCD is set to on
+}
+
+void LCD_turnOff()
+{
+    LCD_writeByte(LCD_BACKLIGHT, LCD_COMMAND);
+    vTaskDelay(2 / portTICK_RATE_MS);
+}
+
+void LCD_turnOn()
+{
+    LCD_writeByte(LCD_DISPLAY_ON, LCD_COMMAND);
+    vTaskDelay(2 / portTICK_RATE_MS);
 }
 
 void LCD_setCursor(uint8_t col, uint8_t row)
