@@ -20,12 +20,14 @@
 #include "ina219.h" 
 #include "Buzzer.h" 
 #include "BTN.h"    //button
-
+#include "ds18b20.h"
+#include "MicroSD.h"
 //define
 #define LCD_BUFFER_SIZE 16
 
 //Tag
 static const char *TAG = "Main";
+
 
 /*__________Khai bao bien______________________________________*/
 // trang thai nut bam
@@ -42,8 +44,17 @@ static float bus_voltage1, shunt_voltage1, current1, power1;
 static float bus_voltage2, shunt_voltage2, current2, power2;
 //lcd
 static char LCD_BUFFER[LCD_BUFFER_SIZE];
+//18b20
+//dia chi 18b20 tu menuconfig
+DeviceAddress tempSensors[2];
+static float temp1, temp2; // luu gia tri do C pin 1,2
 // task status
 bool task1_stat = true;
+bool task2_stat = true;
+
+
+
+
 
 /*__________Khai bao ham_______________________________________*/
 //khai bao ham ngat cho nut bam
@@ -60,8 +71,26 @@ void Buzzer_set_duty_task(void *pvParameters);
 //INA get current, voltage
 void INA_get_current_Voltage();
 
-//task
-void task1(void *pvParameters); //lay va hien thi do dac len man ihin
+//lay du lieu nhiet do tu 18b20
+// do esp32 dung cau truc little endian VD: 0x123456 -> 0x56 0x34 0x12 khi luu vao flash
+void hexToUint8Array(uint64_t hexValue, uint8_t array[8]);
+void _18B20_get_temp();
+
+
+
+
+
+
+/*______________task__________________________________*/
+//task1 do update cac bien thong so do dac
+// in1219,18b20, terminal
+void task1(void *pvParameters); 
+// task2: kiểm tra các biến đo được có phù hợp điều kiện
+// esp32
+void task2(void *pvParameters); 
+
+
+
 
 /*____________APP_MAIN________________________________*/
 void app_main(void)
@@ -70,11 +99,19 @@ void app_main(void)
     // khởi tạo các ngoại vi
     Component_init();
     xTaskCreate(task1, "doluong_hienthi", 2048, NULL, 2, NULL);
+    
 
     //done
     xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
     return;
 }
+
+
+
+
+
+
+
 /*____________Dinhnghia_______________________________*/
 //khai bao ham ngat cho tung nut bam
 static void IRAM_ATTR powerPin_interrupt_handler(void *args)
@@ -154,8 +191,18 @@ void Component_init()
     LCD_writeStr("Nhom 4|ML:145579");
     vTaskDelay(pdMS_TO_TICKS(1000));
 /*__________18B20___________*/
-
-
+    ds18b20_init(CONFIG_DQ_PIN); // khoi tao gpio lam bus 1 wire
+    //cap nhat dia chi tu config vao mang dia chi temp sensor
+    hexToUint8Array(CONFIG_18B_ADDR1, tempSensors[0]);
+    hexToUint8Array(CONFIG_18B_ADDR2, tempSensors[1]);
+	ds18b20_setResolution(tempSensors,2,10); //khai bao dia chi 2 cam bien, cai dat do phan giai 10bit
+    // in ra dia chi 2 sensor len terminal
+    printf("Address 1: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x \n", 
+        tempSensors[0][0],tempSensors[0][1],tempSensors[0][2],tempSensors[0][3],tempSensors[0][4],
+        tempSensors[0][5],tempSensors[0][6],tempSensors[0][7]);
+	printf("Address 2: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x \n", 
+        tempSensors[1][0],tempSensors[1][1],tempSensors[1][2],tempSensors[1][3],tempSensors[1][4],
+        tempSensors[1][5],tempSensors[1][6],tempSensors[1][7]);
 /*__________SD______________*/
 
 /*__________BUTTON__________*/
@@ -199,23 +246,27 @@ void INA_get_current_Voltage(){
         ESP_ERROR_CHECK(ina219_get_power(&ina1, &power1));
 
         // in dong dien, dien ap cua ina sau khi lắp pin len terminal
-        // in dien tro tinh toan cua mcp len terminal
-        // co 2 truong hop can xem la khi bam button, relay mo ra thi dong dien, dien ap thay doi ra sao
 
         printf("_____________________________________________________________________\n");
-        printf("INA1: VBUS: %.04f V, VSHUNT: %.04f mV, IBUS: %.04f mA, PBUS: %.04f mW\n",
-                bus_voltage1, shunt_voltage1 * 1000, current1 * 1000, power1 * 1000);
+        printf("INA1: VBUS: %.04f V, IBUS: %.04f mA\n",
+                bus_voltage1, current1 * 1000);
+}
 
-        // in len lcd
-        LCD_clearScreen();
-        // in ina1
-        // Gán giá trị khoảng trắng cho mảng lcdBuffer
-        for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
-        LCD_BUFFER[i] = ' ';
-        }
-        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"1:%4.1fmA|%2.1fV",current1*1000,bus_voltage1);
-        LCD_setCursor(0,1); // cot truoc hang sau 
-        LCD_writeStr(LCD_BUFFER);
+// do esp32 dung cau truc little endian VD: 0x123456 -> 0x56 0x34 0x12 khi luu vao flash
+void hexToUint8Array(uint64_t hexValue, uint8_t array[8]) {
+    for (int i = 0; i < 8; i++) {
+        // Lấy giá trị của 1 byte từ giá trị hex và gán vào mảng
+        array[7-i] = (uint8_t)(hexValue >> (i * 8));
+    }
+}
+
+void _18B20_get_temp()
+{
+    ds18b20_requestTemperatures();// yeu cau cac cam bien cap nhat nhiet do
+		float temp1 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]); // lay do c tu PIN1
+		float temp2 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]); // ... PIN2
+    //PRINT ON TERMINAL
+        printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
 }
 
 void task1(void *pvParameters){
@@ -224,7 +275,21 @@ void task1(void *pvParameters){
         if (task1_stat)
         {
             INA_get_current_Voltage();
+            _18B20_get_temp();
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+void task2(void *pvParameters){
+    while(1)
+    {
+        if (task2_stat)
+        {
+            //so sanh nhiet do voi gia tri an toan
+
+
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }

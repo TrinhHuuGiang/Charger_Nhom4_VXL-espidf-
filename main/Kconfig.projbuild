@@ -154,4 +154,9 @@ menu "z_____Pin out gpio,i2c,spi,1wire,... configuration"
         help 
             ......
 
+    config RES_TEST
+        int "dien tro kiem tra truoc khi sac"
+        default 1000
+        help
+            cang be thi cang ton dien cua pin, cang lon thi sai so cang cao
 endmenu
