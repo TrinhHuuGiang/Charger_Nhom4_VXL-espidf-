@@ -1,3 +1,6 @@
+/// các chức năng thực hiện được: cảnh báo pin lắp ngược , pin không sạc , pin sạc nhanh , sạc chậm
+// xử lý tự ngắt khi đầy pin
+
 //system
 #include <string.h>
 #include <sys/types.h>
@@ -103,7 +106,7 @@ void hexToUint8Array(uint64_t hexValue, uint8_t array[8]);
 void _18B20_get_temp();
 
 // so sanh gia tri do de dua ra nhan xet
-void compare_values(float temp,float cur_value, 
+void compare_values(float temp,float current, float bus_voltage,
 int *pin_temp, int *pin_vol,int *pin_en, int pin_mode);
 //tu nhan xet set  mode sac pin
 void pin_status(int *pin_en,int *pin_vol ,int *pin_temp, int* pin_mode);
@@ -136,7 +139,7 @@ void app_main(void)
     // khởi tạo các ngoại vi
     Component_init();
 
-    xTaskCreate(task1, "doluong_hienthi", 2048, NULL, 5, NULL);
+    xTaskCreate(task1, "doluong_hienthi", 2048, NULL, 8, NULL);
     xTaskCreate(task2, "sosanh_thongso",2048,NULL,5,NULL);
     xTaskCreate(task3, "batdausac",2048,NULL,5,NULL);
     xTaskCreate(task4, "Hienthitrangthai",2048,NULL,5,NULL);
@@ -282,11 +285,12 @@ void INA_get_current_Voltage(){
         ESP_ERROR_CHECK(ina219_get_current(&ina2, &current2));
         // in dong dien, dien ap cua ina sau khi lắp pin len terminal
 
-        printf("_____________________________________________________________________\n");
+    /*  printf("_____________________________________________________________________\n");
         printf("INA1: VBUS: %.04f V, IBUS: %f A\n",
                 bus_voltage1, current1);
         printf("INA2: VBUS: %.04f V, IBUS: %f A\n",
                 bus_voltage2, current2);
+                */  
 }
 
 // do esp32 dung cau truc little endian VD: 0x123456 -> 0x56 0x34 0x12 khi luu vao flash
@@ -303,60 +307,61 @@ void _18B20_get_temp()
 	    temp1 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]); // lay do c tu PIN1
 		temp2 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]); // ... PIN2
     //PRINT ON TERMINAL
-        printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
+    //    printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
 }
 
-void compare_values(float temp,float cur_value, 
+void compare_values(float temp,float current, float bus_voltage,
 int *pin_temp, int *pin_vol,int *pin_en, int pin_mode)
 {
-    float bus_voltage = cur_value * CONFIG_RES_TEST;
+    float _bus_voltage;
+    if(current <= 0.01) // chua cam pin
+    {
+        _bus_voltage = current * CONFIG_RES_TEST;
+    }
+    else _bus_voltage = bus_voltage;
     if(pin_mode == 0) // chua sac
     {
     // lap dung pin
     // vi dien ap tot nhat trong khoang 2.7 den 4.2
     // neu chon dien tro toi da la 1000 ohm thi dong toi thieu la - 0.0027
     // bus_voltage ma am thi lap dung
-    if (bus_voltage <= -1)
+    if (_bus_voltage <= -1)
     {
         //lap dung pin
          *pin_en =1 ;
     }
     
-    else if (bus_voltage >= 1)
+    else if (_bus_voltage >= 1)
     {
          *pin_en = 2 ;   //lap sai pin
     }
     else *pin_en = 0 ; //chua co pin
     }
 
-    vTaskDelay(pdMS_TO_TICKS(10));
-
     // so sanh dien ap -> pin tot
     // dien ap chua dong mach se = 4.2 v cua nguon nen can thay bang
     // U = -I.R voi R la dien tro thu duoc lap ngoai mach , con fig gia tri trong menu
     // dau - cho biet dong dien dang am khi lap dung chieu
-    if(bus_voltage<0)
-    {bus_voltage = - bus_voltage;}
-    if(bus_voltage >= 2.7 && bus_voltage <= 3)
+    if(_bus_voltage<0)
+    {_bus_voltage = - _bus_voltage;}
+    if(_bus_voltage >= 2.7 && _bus_voltage <= 3)
     {
         *pin_vol = 1; // thap
     }
-    else if(bus_voltage > 3 && bus_voltage <= 4)
+    else if(_bus_voltage > 3 && _bus_voltage <= 4)
     {
         *pin_vol = 0; // ok
     }
-    else if(bus_voltage > 4 && bus_voltage <= 4.2)
+    else if(_bus_voltage > 4 && _bus_voltage <= 4.2)
     {
         *pin_vol = 2; // full
     }
-    else if (bus_voltage < 2.7)
+    else if (_bus_voltage < 2.7)
     {
         *pin_vol = 3; //qua thap -> pin fail
     }
     else *pin_vol =4 ;//qua cao
-    vTaskDelay(pdMS_TO_TICKS(10));
     
-
     // so sanh nhiet do
     if(temp>=0 && temp <= 45)
     {
@@ -367,7 +372,6 @@ int *pin_temp, int *pin_vol,int *pin_en, int pin_mode)
         *pin_temp = 2; // qua thap
     }
     else *pin_temp = 1; //qua cao
-    vTaskDelay(pdMS_TO_TICKS(10));   
 }
 
 void pin_status(int *pin_en,int *pin_vol ,int *pin_temp, int* pin_mode)
@@ -388,13 +392,13 @@ void pin_status(int *pin_en,int *pin_vol ,int *pin_temp, int* pin_mode)
         *pin_mode = 0; // ngat sac   
     }
     else *pin_mode = 0; // khong du dieu kien sac   
-    vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 // truyen vao dia chi bien mcp41010 va pin mode phu hop
 // cac bien curval can duoc chon sao cho tot nhat và khong duoc ngan mach
 void set_charge_mode(MCP_t* mcp,uint8_t potentiometer ,int *pin_mode, uint8_t _RELAY_PIN, bool* relay_stat)
 {
+
     if(*pin_mode == 0) // khong sac
     {
         if(*relay_stat == true)
@@ -462,34 +466,32 @@ void display_1(int pinnumber,int pin_mode, int row)
     }
 }
 
-void task1(void *pvParameters){
+void task1(void *pvParameters){ // 10ms lay thong so
     while(1)
     {
         if (task1_stat)
         {
             INA_get_current_Voltage();
-            vTaskDelay(pdMS_TO_TICKS(100));
             _18B20_get_temp();
-        }
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-}
-
-void task2(void *pvParameters){
-    while(1)
-    {
-        if (task2_stat)
-        {
-            //danh gia thong so co tot khong
-            compare_values(temp1, current1, &pin1_temp,&pin1_vol,&pin1_en, pin1_mode);
-            compare_values(temp2, current2, &pin2_temp,&pin2_vol,&pin2_en, pin2_mode);
-            vTaskDelay(pdMS_TO_TICKS(10));
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
-void task3(void *pvParameters){
+void task2(void *pvParameters){ // 10ms so sanh voi chi tieu
+    while(1)
+    {
+        if (task2_stat)
+        {
+            //danh gia thong so co tot khong
+            compare_values(temp1, current1, bus_voltage1, &pin1_temp,&pin1_vol,&pin1_en, pin1_mode);
+            compare_values(temp2, current2, bus_voltage2, &pin2_temp,&pin2_vol,&pin2_en, pin2_mode);
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
+void task3(void *pvParameters){ // 100 ms thay doi bien trang thai va quyet dinh
     while(1)
     {
         if (task3_stat)
@@ -500,12 +502,12 @@ void task3(void *pvParameters){
             set_charge_mode(&mcp1,potentiometer1 ,&pin1_mode, CONFIG_RELAY_PIN_1, & relay_1_stat);
             set_charge_mode(&mcp2,potentiometer2 ,&pin2_mode, CONFIG_RELAY_PIN_2, & relay_2_stat);
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
-void task4(void *pvParameters){
-while(1)
+void task4(void *pvParameters){ //100ms  in ra man hinh 
+    while(1)
     {
         if (task4_stat)
         {
@@ -513,6 +515,6 @@ while(1)
             display_1(1,pin1_mode,0);
             display_1(2,pin2_mode,1);
         }
-        vTaskDelay(100);
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
