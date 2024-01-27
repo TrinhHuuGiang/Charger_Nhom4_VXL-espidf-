@@ -148,7 +148,6 @@ void app_main(void)
 
 
 
-
 /*____________Dinhnghia_______________________________*/
 //khai bao ham ngat cho tung nut bam
 static void IRAM_ATTR powerPin_interrupt_handler(void *args)
@@ -301,8 +300,8 @@ void hexToUint8Array(uint64_t hexValue, uint8_t array[8]) {
 void _18B20_get_temp()
 {
     ds18b20_requestTemperatures();// yeu cau cac cam bien cap nhat nhiet do
-		float temp1 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]); // lay do c tu PIN1
-		float temp2 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]); // ... PIN2
+	    temp1 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]); // lay do c tu PIN1
+		temp2 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]); // ... PIN2
     //PRINT ON TERMINAL
         printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
 }
@@ -352,7 +351,7 @@ int *pin_temp, int *pin_vol,int *pin_en, int pin_mode)
     }
     else if (bus_voltage < 2.7)
     {
-        *pin_vol = 3; //qua thap hoac lap sai pin -> pin fail
+        *pin_vol = 3; //qua thap -> pin fail
     }
     else *pin_vol =4 ;//qua cao
     vTaskDelay(pdMS_TO_TICKS(10));
@@ -482,8 +481,8 @@ void task2(void *pvParameters){
         if (task2_stat)
         {
             //danh gia thong so co tot khong
-            compare_values(temp1, cur_value1, &pin1_temp,&pin1_vol,&pin1_en, pin1_mode);
-            compare_values(temp2, cur_value2, &pin2_temp,&pin2_vol,&pin2_en, pin2_mode);
+            compare_values(temp1, current1, &pin1_temp,&pin1_vol,&pin1_en, pin1_mode);
+            compare_values(temp2, current2, &pin2_temp,&pin2_vol,&pin2_en, pin2_mode);
             vTaskDelay(pdMS_TO_TICKS(10));
         }
         vTaskDelay(pdMS_TO_TICKS(10));
