@@ -34,11 +34,12 @@
 
 //Tag
 static const char *TAG = "Main";
-
+//ascii
+static char arrow[2] = {127,'\0'};
 
 /*__________Khai bao bien______________________________________*/
 // trang thai nut bam
-static bool menu_stat = 0,select_stat = 0; // trang thai 0 la chua duoc nhan nut
+static bool select_stat = false; // trang thai 0 la chua duoc nhan nut
 // trang thai relay
 static bool relay_power_stat = true, relay_1_stat = false, relay_2_stat = false; //trang thai relay
 //gia tri MCP41010 cho tung module
@@ -51,11 +52,14 @@ static float bus_voltage1, current1; // điện áp và dòng điện đo đươ
 static float bus_voltage2, current2;
 //lcd
 static char LCD_BUFFER[LCD_BUFFER_SIZE];
+static int max_row = 2, max_col = 16;
+static int row_select = 0; // set cursor row
 //18b20
 //dia chi 18b20 tu menuconfig
 DeviceAddress tempSensors[2];
 static float temp1, temp2; // luu gia tri do C pin 1,2
-// task status
+
+// task status _ cac bien dieu khien task
 //task1_đo đạc 2 pin
 static bool task1_stat = true;
 //task2_1_kiểm tra pin 1 trước khi sạc
@@ -74,7 +78,10 @@ static bool task5_stat = true;
 static bool task6_1_stat = false;
 //task6_2_hiển thị pin 2 - mac dinh tat
 static bool task6_2_stat = false;
+//task7_lua chon display - mac dinh bat
+static bool task7_stat = true;
 
+// cac bien them cho task
 // cac dieu kien can de danh gia pin
 // nhiet do:
 // 0: nhiet do tot
@@ -103,6 +110,7 @@ static int pin2_vol = 1; // mac dinh 0 pin
 // mode =0 khong sac, = 1 bat dau sac, = 2 sac hoi phuc, = 3 sac dong cao, = 4 sac ket thuc
 static int pin1_mode = 0; 
 static int pin2_mode = 0; // mode ...
+
 
 /*__________Khai bao ham_______________________________________*/
 //khai bao ham ngat cho nut bam
@@ -162,11 +170,15 @@ void task5(void *pvParematers);
 // chi tiet pin
 // Ham ho tro hien thi task 6
 // display
-void display_1(int pinnumber,int pin_mode, int row);
+void display_2(int pinnumber, float current, float bus_voltage, float temp, 
+int pin_mode, int pin_vol, int pin_temp);
 void task6_1(void *pvParematers);
 void task6_2(void *pvParematers);
 
-
+/*_____task7_________*/
+//block display 1 open display 2 hoac nguoc lai
+void set_display_mode();
+void task7(void *pvParematers);
 
 /*____________APP_MAIN________________________________*/
 void app_main(void)
@@ -190,6 +202,8 @@ void app_main(void)
     xTaskCreate(task6_1, "display_pin1",2048,NULL,5,NULL);
     xTaskCreate(task6_2, "display_pin2",2048,NULL,5,NULL);     
         ESP_LOGI(TAG,"6");  
+    xTaskCreate(task7, "display_select",2048,NULL,5,NULL);     
+        ESP_LOGI(TAG,"7");  
     //done
     xTaskCreate(Buzzer_set_duty_task, NULL, 2048, NULL, 2, NULL);
     return;
@@ -206,11 +220,15 @@ static void IRAM_ATTR powerPin_interrupt_handler(void *args)
 }
 static void IRAM_ATTR menuPin_interrupt_handler(void *args)
 {
-    menu_stat = !menu_stat; // doi trang thai
+    if(++row_select == max_row) // kiem tra va tang row
+    {
+        row_select = 0; // reset
+    }
 }
 static void IRAM_ATTR selectPin_interrupt_handler(void *args)
 {
-    select_stat = !select_stat; // doi trang thai
+    if(select_stat == false) // doi trang thai
+    select_stat = true;
 }
 
 //khoi tao component:Button, Relay, Buzzer, MCP41010, INA219, 18B20, LCD, SD
@@ -331,12 +349,12 @@ void INA_get_current_Voltage(){
         ESP_ERROR_CHECK(ina219_get_current(&ina2, &current2));
         // in dong dien, dien ap cua ina sau khi lắp pin len terminal
 
-    printf("_____________________________________________________________________\n");
+    /*printf("_____________________________________________________________________\n");
         printf("INA1: VBUS: %.04f V, IBUS: %f A\n",
                 bus_voltage1, current1);
         printf("INA2: VBUS: %.04f V, IBUS: %f A\n",
                 bus_voltage2, current2);
-                
+                */
 }
 
 // do esp32 dung cau truc little endian VD: 0x123456 -> 0x56 0x34 0x12 khi luu vao flash
@@ -353,7 +371,7 @@ void _18B20_get_temp()
 	    temp1 = ds18b20_getTempC((DeviceAddress *)tempSensors[0]); // lay do c tu PIN1
 		temp2 = ds18b20_getTempC((DeviceAddress *)tempSensors[1]); // ... PIN2
     //PRINT ON TERMINAL
-        printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
+      //  printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
 }
 
 // 50ms lay thong so
@@ -381,7 +399,6 @@ float current, float temp)
 
     // check dien ap
     float bus_voltage = (float)current * (float)CONFIG_RES_TEST; // kiem tra dien ap khi pin xa ra dien tro test
-    ESP_LOGI(TAG,"%f", bus_voltage);
     if(bus_voltage > 1) *pin_vol = 0; //lap nguoc
     else if(bus_voltage >=-1 && bus_voltage <=1) *pin_vol = 1; // khong pin
     else if(bus_voltage >-2.7 && bus_voltage <-1) *pin_vol = 2; // qua thap
@@ -389,7 +406,6 @@ float current, float temp)
     else if(bus_voltage >=-4.3 && bus_voltage <-4) *pin_vol = 4; // full
     else *pin_vol = 5; // qua cao
 
-            ESP_LOGI(TAG,"%d %d", * pin_temp, *pin_vol);
     // change pin_mode
     if(* pin_temp == 0 && *pin_vol == 3)
     {
@@ -551,7 +567,7 @@ bool* task2_stat, bool* task3_stat)
         }
 }
 
-void task4(void *pvParematers)// 10ms quyet dinh thay doi trang thai sac
+void task4(void *pvParematers)// 50ms quyet dinh thay doi trang thai sac
 { 
     while(1)
     {
@@ -566,14 +582,16 @@ void task4(void *pvParematers)// 10ms quyet dinh thay doi trang thai sac
     }
 }
 
-// hien thi man hinh 2 pin
+// hien thi man hinh 2 pin va set con tro
 void display_1(int pinnumber,int pin_mode, int row)
 {
+    // hien thi thong tin
     if(pin_mode == 0) //khong sac
     {
         for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
         LCD_BUFFER[i] = ' ';
         }
+         // max 15 ki tu và 1 null, dieu nay rat tot khi con thua 1 o o cuoi cho viec them 1 con tro <-
         snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"PIN%d: Khong sac",pinnumber);
         LCD_setCursor(0,row); // cot truoc hang sau 
         LCD_writeStr(LCD_BUFFER);
@@ -623,6 +641,19 @@ void display_1(int pinnumber,int pin_mode, int row)
         LCD_setCursor(0,row); // cot truoc hang sau 
         LCD_writeStr(LCD_BUFFER);
     }
+
+    // set con tro
+    if(row_select == 0)
+    {
+        LCD_setCursor(15,row_select);
+        LCD_writeStr(arrow);
+        ESP_LOGI(TAG,"-> %s",arrow);
+    }
+    else
+    {
+        LCD_setCursor(15,row_select);
+        LCD_writeStr(arrow);
+    }
 }
 void task5(void *pvParematers)// 1000ms hien thi trang thai 2 pin
 { 
@@ -638,6 +669,78 @@ void task5(void *pvParematers)// 1000ms hien thi trang thai 2 pin
     }
 }
 
+// 
+void display_2(int pinnumber, float current, float bus_voltage, float temp, int pin_mode, int pin_vol, int pin_temp)
+{
+    // hien thi hang 1
+    for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
+        LCD_BUFFER[i] = ' ';
+        }
+         // max 15 ki tu và 1 null, dieu nay rat tot khi con thua 1 o o cuoi cho viec them 1 con tro <-
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"PIN: %d|T:%2.1fC",pinnumber, temp);
+        LCD_setCursor(0,0); // cot truoc hang sau 
+        LCD_writeStr(LCD_BUFFER);
+
+    // hien thi hang 2
+    for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
+        LCD_BUFFER[i] = ' ';
+        }
+
+        if(pin_vol == 0)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: lap nguoc");
+        }
+        else if(pin_vol == 1)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: khong pin");
+        }
+        else if(pin_vol == 2)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: pin hong");
+        }
+        else if(pin_vol == 3)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: pin tot");
+        }
+        else if(pin_vol == 4)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: pin day");
+        }
+        else if(pin_vol == 5)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: U qua cao");
+        }
+        else if(pin_vol == 6)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: Hoi phuc");
+        }
+        else if(pin_vol == 7)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: Sac nhanh");
+        }
+        else if(pin_vol == 8)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: Hoan tat");
+        }
+        else if(pin_vol == 9)
+        {
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: Ngat sac");
+        }
+        else snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"Note: ERROR");
+
+        LCD_setCursor(0,1); // cot truoc hang sau 
+        LCD_writeStr(LCD_BUFFER);
+    // hien thi them hang 1
+    vTaskDelay(pdMS_TO_TICKS(2000));; // tam dung 2 s
+    for (int i = 0; i < LCD_BUFFER_SIZE; i++) {
+        LCD_BUFFER[i] = ' ';
+        }
+         // max 15 ki tu và 1 null, dieu nay rat tot khi con thua 1 o o cuoi cho viec them 1 con tro <-
+        snprintf(LCD_BUFFER, LCD_BUFFER_SIZE,"U:%2.1fV|I:%4.0fm",bus_voltage,current*1000);
+        LCD_setCursor(0,0); // cot truoc hang sau 
+        LCD_writeStr(LCD_BUFFER);
+    
+}
 
 void task6_1(void *pvParematers)// 1000ms hien thi trang thai pin 1
 { 
@@ -645,21 +748,72 @@ void task6_1(void *pvParematers)// 1000ms hien thi trang thai pin 1
     {
         if (task6_1_stat)
         {
-            
+            LCD_clearScreen();
+            display_2(1,current1,bus_voltage1,temp1,pin1_mode,pin1_vol,pin1_temp);
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
 void task6_2(void *pvParematers)// 1000ms hien thi trang thai pin 2
+
 { 
     while(1)
     {
         if (task6_2_stat)
         {
-
+            LCD_clearScreen();
+            display_2(2,current2,bus_voltage2,temp2,pin2_mode,pin2_vol,pin2_temp);
         }       
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
 }
+
+// block task to display
+void set_display_mode(){
+    if(select_stat == true) // kiem tra co bam nut khong
+    {
+        select_stat = false;
+        // kiem tra task 5 co dang bat khong, neu khong thi nghia la dang o task 6
+        // neu o task 6 , tat het task 6, bat task 5
+        // neu o task 5, tat task 5, bat task 6 theo rowselect tu menu
+        if(task5_stat == true)
+        {
+            //tat task 5
+            task5_stat = false;
+            // bat task 6_ nao do
+            if(row_select == 0)
+            {
+                task6_1_stat = true;
+                return; // return luon tranh viec trong luc do bam menu thay doi row_select
+            }
+            else if (row_select == 1)
+            {
+                task6_2_stat = true;
+                return; // return luon tranh viec trong luc do bam menu thay doi row_select
+            }
+            else task5_stat = true; // khong the mo task 6 va de nguyen task 5
+        }
+        else
+        {
+            // tat tat ca task 6
+            task6_1_stat=false; task6_2_stat=false;
+            // bat task 5
+            task5_stat = true;
+        }
+    }  
+}
+
+// task 7
+void task7(void *pvParematers)// 50ms block
+{
+    while(1)
+    {
+        if (task7_stat)
+        {
+            set_display_mode();
+        }       
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+} 
