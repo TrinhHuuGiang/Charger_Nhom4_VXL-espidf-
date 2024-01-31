@@ -356,7 +356,7 @@ void _18B20_get_temp()
         printf("Temperatures: (1) %0.1fC||(2) %0.1fC\n", temp1,temp2);
 }
 
-// 10ms lay thong so
+// 50ms lay thong so
 void task1(void *pvParameters)
 { 
     while(1)
@@ -366,7 +366,7 @@ void task1(void *pvParameters)
             INA_get_current_Voltage();
             _18B20_get_temp();
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 
@@ -432,6 +432,7 @@ float bus_voltage, float temp)
     else *pin_temp = 2;
 
     // check dien ap
+    ESP_LOGE(TAG,"%f",bus_voltage);
     if(bus_voltage >= 2.7 && bus_voltage <= 3) *pin_vol = 6; // sac hoi phuc
     else if(bus_voltage >3 && bus_voltage <=4) *pin_vol = 7; // sac nhanh
     else if(bus_voltage > 4 && bus_voltage <= 4.1) *pin_vol = 8;  // sac ket thuc
@@ -477,6 +478,7 @@ void task3_2(void *pvParameters)// 100ms kiem tra pin khi dang sac
 void set_charge_mode(MCP_t* mcp,uint8_t potentiometer ,int pin_mode, uint8_t _RELAY_PIN, bool* relay_stat,
 bool* task2_stat, bool* task3_stat)
 {
+    ESP_LOGI(TAG,"%d", pin_mode);
     // CHECK MODE AND CHANGE RELAY
     if ( pin_mode == 1) // bat dau sac
     {
@@ -560,7 +562,7 @@ void task4(void *pvParematers)// 10ms quyet dinh thay doi trang thai sac
             set_charge_mode(&mcp2,potentiometer2 , pin2_mode, CONFIG_RELAY_PIN_2, & relay_2_stat,
             &task2_2_stat, &task3_2_stat);
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 
